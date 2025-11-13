@@ -1,8 +1,10 @@
 // ===== CONFIG =====
 const CONFIG = {
   CONTRACT: 'HxPdrDUWCPauvGp5buDzkrM8uHGSeHkzwuFVVt4sUWTF',
-  POLL_MS: 10000 // 10 detik
+  POLL_MS: 10000
 };
+
+console.log('WTF Live - Initializing...');
 
 // ===== BOOT ANIMATION =====
 document.addEventListener('DOMContentLoaded', ()=>{
@@ -11,6 +13,12 @@ document.addEventListener('DOMContentLoaded', ()=>{
     setTimeout(()=> boot.classList.add('hide'), 1200);
     setTimeout(()=> boot.remove(), 1900);
   }
+  
+  // Init updates
+  setTimeout(() => {
+    console.log('Starting live updates...');
+    updateAll();
+  }, 2000);
 });
 
 // ===== COPY CA BUTTON =====
@@ -38,23 +46,36 @@ function fmt(num, decimals = 2) {
 // ===== UPDATE PRICE & MARKET CAP =====
 async function updatePriceMC() {
   try {
-    const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${CONFIG.CONTRACT}`);
+    console.log('Fetching price/MC...');
+    const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${CONFIG.CONTRACT}`, {
+      cache: 'no-store'
+    });
+    
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    
     const data = await res.json();
+    console.log('DexScreener response:', data);
     
     if (data.pairs && data.pairs[0]) {
       const pair = data.pairs[0];
       
       // Update price
-      const priceEl = document.querySelector('[data-price] .v');
-      if (priceEl && pair.priceUsd) {
-        priceEl.textContent = `$${fmt(pair.priceUsd, 6)}`;
+      const priceEl = document.querySelector('[data-price]');
+      if (priceEl) {
+        const priceVal = priceEl.querySelector('.v') || priceEl;
+        if (pair.priceUsd) {
+          priceVal.textContent = `$${fmt(pair.priceUsd, 6)}`;
+          console.log('Price updated:', pair.priceUsd);
+        }
       }
       
       // Update market cap
-      const mcEl = document.querySelector('[data-mc] .v');
+      const mcEl = document.querySelector('[data-mc]');
       if (mcEl) {
+        const mcVal = mcEl.querySelector('.v') || mcEl;
         const mc = pair.fdv || (pair.priceUsd * 1000000000);
-        mcEl.textContent = `$${fmt(mc, 0)}`;
+        mcVal.textContent = `$${fmt(mc, 0)}`;
+        console.log('MC updated:', mc);
       }
       
       return true;
@@ -68,12 +89,21 @@ async function updatePriceMC() {
 // ===== UPDATE HOLDERS =====
 async function updateHolders() {
   try {
-    const res = await fetch(`https://public-api.solscan.io/token/holders?tokenAddress=${CONFIG.CONTRACT}&offset=0&limit=1`);
-    const data = await res.json();
+    console.log('Fetching holders...');
+    const res = await fetch(`https://public-api.solscan.io/token/holders?tokenAddress=${CONFIG.CONTRACT}&offset=0&limit=1`, {
+      cache: 'no-store'
+    });
     
-    const holdEl = document.querySelector('[data-holders] .v');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    
+    const data = await res.json();
+    console.log('Solscan response:', data);
+    
+    const holdEl = document.querySelector('[data-holders]');
     if (holdEl && data.total) {
-      holdEl.textContent = fmt(data.total, 0);
+      const holdVal = holdEl.querySelector('.v') || holdEl;
+      holdVal.textContent = fmt(data.total, 0);
+      console.log('Holders updated:', data.total);
       return true;
     }
   } catch (err) {
@@ -85,7 +115,12 @@ async function updateHolders() {
 // ===== UPDATE LIVE FEED =====
 async function updateLiveFeed() {
   try {
-    const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${CONFIG.CONTRACT}`);
+    const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${CONFIG.CONTRACT}`, {
+      cache: 'no-store'
+    });
+    
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    
     const data = await res.json();
     
     if (data.pairs && data.pairs[0] && data.pairs[0].txns) {
@@ -104,17 +139,15 @@ function renderFeed(txns) {
   const feedList = document.getElementById('feed-list');
   if (!feedList) return;
   
-  // Bikin simulasi trades dari txn count
   const trades = [];
   const buyCount = txns.buys || 0;
   const sellCount = txns.sells || 0;
   
-  // Generate random trades untuk display
   for (let i = 0; i < Math.min(10, buyCount + sellCount); i++) {
     const isBuy = Math.random() > 0.5;
     const amount = (Math.random() * 5000000).toFixed(0);
     const now = new Date();
-    now.setSeconds(now.getSeconds() - (i * 60)); // Mundur per menit
+    now.setSeconds(now.getSeconds() - (i * 60));
     
     trades.push({
       time: now.toLocaleTimeString('en-US', { hour12: false }),
@@ -129,12 +162,12 @@ function renderFeed(txns) {
   }
   
   const html = trades.map(t => `
-  <div class="feed-row">
-    <span class="t">${t.time}</span>
-    <span class="s ${t.side.toLowerCase()}">${t.side}</span>
-    <span class="a">${fmt(t.amount, 0)} WTF</span>
-  </div>
-`).join('');
+    <div class="feed-row">
+      <span class="t">${t.time}</span>
+      <span class="s ${t.side.toLowerCase()}">${t.side}</span>
+      <span class="a">${fmt(t.amount, 0)} WTF</span>
+    </div>
+  `).join('');
   
   feedList.innerHTML = html;
 }
@@ -143,24 +176,26 @@ function renderFeed(txns) {
 function setLiveDot(active) {
   const dot = document.querySelector('.live-dot');
   const txt = document.querySelector('.feed .txt');
-  if (!dot || !txt) return;
+  if (!dot) return;
   
   if (active) {
     dot.classList.add('ok');
-    txt.textContent = 'Live Feed Active';
+    if (txt) txt.textContent = 'Live Feed Active';
   } else {
     dot.classList.remove('ok');
-    txt.textContent = 'Awaiting Signal';
+    if (txt) txt.textContent = 'Awaiting Signal';
   }
 }
 
 // ===== MAIN UPDATE FUNCTION =====
 async function updateAll() {
+  console.log('=== Update All ===');
   const p1 = await updatePriceMC();
   const p2 = await updateHolders();
   const p3 = await updateLiveFeed();
   
   setLiveDot(p1 || p2 || p3);
+  console.log('Update complete:', {price: p1, holders: p2, feed: p3});
 }
 
 // ===== SIGNALS TYPEWRITER =====
@@ -207,11 +242,8 @@ async function updateAll() {
   step();
 })();
 
-// ===== INIT & AUTO REFRESH =====
-document.addEventListener('DOMContentLoaded', () => {
-  updateAll();
-  setInterval(updateAll, CONFIG.POLL_MS);
-});
+// ===== AUTO REFRESH =====
+setInterval(updateAll, CONFIG.POLL_MS);
 
 // ===== REMOVE CHART LOADING STATE =====
 window.addEventListener('load', () => {
