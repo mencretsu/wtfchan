@@ -129,12 +129,12 @@ function renderFeed(txns) {
   }
   
   const html = trades.map(t => `
-    <div class="feed-row">
-      <span class="t">${t.time}</span>
-      <span class="s ${t.side.toLowerCase()}">${t.side}</span>
-      <span class="a">${fmt(t.amount, 0)}</span>
-    </div>
-  `).join('');
+  <div class="feed-row">
+    <span class="t">${t.time}</span>
+    <span class="s ${t.side.toLowerCase()}">${t.side}</span>
+    <span class="a">${fmt(t.amount, 0)} WTF</span>
+  </div>
+`).join('');
   
   feedList.innerHTML = html;
 }
