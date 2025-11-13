@@ -2,7 +2,7 @@
 const CONFIG = {
   CONTRACT: 'HxPdrDUWCPauvGp5buDzkrM8uHGSeHkzwuFVVt4sUWTF',
   POLL_MS: 15000,
-  CORS_PROXY: 'https://api.allorigins.win/get?url='
+  CORS_PROXY: 'https://floral-violet-849f.yopikonn.workers.dev/'
 };
 
 console.log('🚀 WTF Live - Starting with CORS bypass...');
