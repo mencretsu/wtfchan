@@ -1,10 +1,11 @@
 // ===== CONFIG =====
 const CONFIG = {
   CONTRACT: 'HxPdrDUWCPauvGp5buDzkrM8uHGSeHkzwuFVVt4sUWTF',
-  POLL_MS: 15000 // 15 detik biar ga spam
+  POLL_MS: 15000,
+  CORS_PROXY: 'https://api.allorigins.win/get?url='
 };
 
-console.log('🚀 WTF Live - Starting...');
+console.log('🚀 WTF Live - Starting with CORS bypass...');
 
 // ===== BOOT ANIMATION =====
 document.addEventListener('DOMContentLoaded', ()=>{
@@ -14,7 +15,6 @@ document.addEventListener('DOMContentLoaded', ()=>{
     setTimeout(()=> boot.remove(), 1900);
   }
   
-  // Init updates setelah 2 detik
   setTimeout(() => {
     console.log('⚡ Starting live updates...');
     updateAll();
@@ -31,7 +31,7 @@ document.addEventListener('click', (e)=>{
     const prev = btn.textContent;
     btn.textContent = 'COPIED';
     setTimeout(()=> btn.textContent = prev, 1500);
-  }).catch(err => console.error('Copy failed:', err));
+  });
 });
 
 // ===== FORMAT NUMBERS =====
@@ -43,29 +43,41 @@ function fmt(num, decimals = 2) {
   });
 }
 
+// ===== FETCH WITH CORS BYPASS =====
+async function fetchJSON(url) {
+  try {
+    const proxyUrl = CONFIG.CORS_PROXY + encodeURIComponent(url);
+    const res = await fetch(proxyUrl);
+    
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    
+    const wrapper = await res.json();
+    const data = JSON.parse(wrapper.contents);
+    return data;
+    
+  } catch (err) {
+    console.error('Fetch error:', err);
+    return null;
+  }
+}
+
 // ===== UPDATE PRICE & MARKET CAP =====
 async function updatePriceMC() {
   try {
-    console.log('📊 Fetching price/MC from DexScreener...');
+    console.log('📊 Fetching price/MC...');
     
-    const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${CONFIG.CONTRACT}`, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json'
-      }
-    });
+    const url = `https://api.dexscreener.com/latest/dex/tokens/${CONFIG.CONTRACT}`;
+    const data = await fetchJSON(url);
     
-    if (!res.ok) {
-      console.error('❌ DexScreener HTTP', res.status);
+    if (!data) {
+      console.error('❌ No data from DexScreener');
       return false;
     }
     
-    const data = await res.json();
-    console.log('✅ DexScreener data:', data);
+    console.log('✅ DexScreener response:', data);
     
-    if (data && data.pairs && data.pairs.length > 0) {
+    if (data.pairs && data.pairs.length > 0) {
       const pair = data.pairs[0];
-      console.log('💰 Pair data:', pair);
       
       // Update price
       if (pair.priceUsd) {
@@ -73,26 +85,23 @@ async function updatePriceMC() {
         if (priceEl) {
           const priceVal = priceEl.querySelector('.v') || priceEl;
           priceVal.textContent = `$${fmt(pair.priceUsd, 8)}`;
-          console.log('✅ Price:', pair.priceUsd);
+          console.log('💰 Price:', pair.priceUsd);
         }
       }
       
       // Update market cap
-      if (pair.fdv || pair.marketCap) {
-        const mcEl = document.querySelector('[data-mc]');
-        if (mcEl) {
-          const mcVal = mcEl.querySelector('.v') || mcEl;
-          const mc = pair.fdv || pair.marketCap || (pair.priceUsd * 1000000000);
-          mcVal.textContent = `$${fmt(mc, 0)}`;
-          console.log('✅ MC:', mc);
-        }
+      const mcEl = document.querySelector('[data-mc]');
+      if (mcEl) {
+        const mcVal = mcEl.querySelector('.v') || mcEl;
+        const mc = pair.fdv || pair.marketCap || (pair.priceUsd * 1000000000);
+        mcVal.textContent = `$${fmt(mc, 0)}`;
+        console.log('💵 MC:', mc);
       }
       
       return true;
-    } else {
-      console.warn('⚠️ No pairs found in response');
-      return false;
     }
+    
+    return false;
     
   } catch (err) {
     console.error('❌ Price/MC error:', err);
@@ -100,53 +109,30 @@ async function updatePriceMC() {
   }
 }
 
-// ===== UPDATE HOLDERS (MULTIPLE FALLBACKS) =====
+// ===== UPDATE HOLDERS =====
 async function updateHolders() {
   const holdEl = document.querySelector('[data-holders]');
   if (!holdEl) return false;
   
   const holdVal = holdEl.querySelector('.v') || holdEl;
   
-  // Try method 1: Solscan holders endpoint
   try {
-    console.log('👥 Trying Solscan holders...');
-    const res = await fetch(`https://public-api.solscan.io/token/holders?tokenAddress=${CONFIG.CONTRACT}&offset=0&limit=1`);
+    console.log('👥 Fetching holders...');
     
-    if (res.ok) {
-      const text = await res.text();
-      if (text && text.trim()) {
-        const data = JSON.parse(text);
-        if (data.total) {
-          holdVal.textContent = fmt(data.total, 0);
-          console.log('✅ Holders (Solscan):', data.total);
-          return true;
-        }
-      }
+    const url = `https://public-api.solscan.io/token/holders?tokenAddress=${CONFIG.CONTRACT}&offset=0&limit=1`;
+    const data = await fetchJSON(url);
+    
+    if (data && data.total) {
+      holdVal.textContent = fmt(data.total, 0);
+      console.log('✅ Holders:', data.total);
+      return true;
     }
+    
   } catch (err) {
-    console.warn('⚠️ Solscan holders failed:', err.message);
+    console.warn('⚠️ Holders failed:', err.message);
   }
   
-  // Try method 2: Solscan meta endpoint
-  try {
-    console.log('👥 Trying Solscan meta...');
-    const res = await fetch(`https://public-api.solscan.io/token/meta?tokenAddress=${CONFIG.CONTRACT}`);
-    
-    if (res.ok) {
-      const data = await res.json();
-      const holders = data.holder || data.holders || data.holder_count;
-      if (holders) {
-        holdVal.textContent = fmt(holders, 0);
-        console.log('✅ Holders (Meta):', holders);
-        return true;
-      }
-    }
-  } catch (err) {
-    console.warn('⚠️ Solscan meta failed:', err.message);
-  }
-  
-  // Fallback: Keep current value or show placeholder
-  console.log('⚠️ All holder endpoints failed, keeping current value');
+  // Keep current or show placeholder
   if (holdVal.textContent === '0') {
     holdVal.textContent = '—';
   }
@@ -156,24 +142,17 @@ async function updateHolders() {
 // ===== UPDATE LIVE FEED =====
 async function updateLiveFeed() {
   try {
-    const res = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${CONFIG.CONTRACT}`);
-    
-    if (!res.ok) return false;
-    
-    const data = await res.json();
+    const url = `https://api.dexscreener.com/latest/dex/tokens/${CONFIG.CONTRACT}`;
+    const data = await fetchJSON(url);
     
     if (data && data.pairs && data.pairs[0]) {
       const pair = data.pairs[0];
-      
-      // Get transaction counts
       const txns = pair.txns || {};
       const h24 = txns.h24 || {};
-      const m5 = txns.m5 || {};
       
       renderFeed({
-        buys: h24.buys || m5.buys || 0,
-        sells: h24.sells || m5.sells || 0,
-        volume: pair.volume?.h24 || 0
+        buys: h24.buys || 0,
+        sells: h24.sells || 0
       });
       
       return true;
@@ -197,12 +176,11 @@ function renderFeed(txns) {
     return;
   }
   
-  // Generate simulated trades
   for (let i = 0; i < total; i++) {
     const isBuy = Math.random() > (txns.sells / (txns.buys + txns.sells));
     const amount = (Math.random() * 5000000 + 100000).toFixed(0);
     const now = new Date();
-    now.setSeconds(now.getSeconds() - (i * 45)); // 45 detik interval
+    now.setSeconds(now.getSeconds() - (i * 45));
     
     trades.push({
       time: now.toLocaleTimeString('en-US', { hour12: false }),
@@ -228,13 +206,8 @@ function setLiveDot(active) {
   const txt = document.querySelector('.feed .txt');
   
   if (dot) {
-    if (active) {
-      dot.style.background = '#00ff00';
-      dot.style.boxShadow = '0 0 10px #00ff00';
-    } else {
-      dot.style.background = '#ff4444';
-      dot.style.boxShadow = '0 0 10px #ff4444';
-    }
+    dot.style.background = active ? '#00ff00' : '#ff4444';
+    dot.style.boxShadow = active ? '0 0 10px #00ff00' : '0 0 10px #ff4444';
   }
   
   if (txt) {
@@ -250,11 +223,9 @@ async function updateAll() {
   const p2 = await updateHolders();
   const p3 = await updateLiveFeed();
   
-  const anySuccess = p1 || p2 || p3;
-  setLiveDot(anySuccess);
+  setLiveDot(p1 || p2 || p3);
   
   console.log('📊 Results:', { price: p1, holders: p2, feed: p3 });
-  console.log('✅ Update complete\n');
 }
 
 // ===== SIGNALS TYPEWRITER =====
@@ -311,5 +282,3 @@ window.addEventListener('load', () => {
     if (chart) chart.classList.remove('loading');
   }, 2500);
 });
-
-console.log('✅ WTF Live initialized!');
