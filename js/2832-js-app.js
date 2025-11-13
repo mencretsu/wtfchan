@@ -2,10 +2,10 @@
 const CONFIG = {
   CONTRACT: 'HxPdrDUWCPauvGp5buDzkrM8uHGSeHkzwuFVVt4sUWTF',
   POLL_MS: 15000,
-  CORS_PROXY: 'https://floral-violet-849f.yopikonn.workers.dev/'
+  WORKER_URL: 'https://floral-violet-849f.yopikonn.workers.dev/' // GANTI INI!
 };
 
-console.log('🚀 WTF Live - Starting with CORS bypass...');
+console.log('🚀 WTF Live - Starting...');
 
 // ===== BOOT ANIMATION =====
 document.addEventListener('DOMContentLoaded', ()=>{
@@ -43,10 +43,10 @@ function fmt(num, decimals = 2) {
   });
 }
 
-// ===== FETCH WITH CORS BYPASS =====
+// ===== FETCH WITH WORKER PROXY =====
 async function fetchJSON(url) {
   try {
-    const proxyUrl = CONFIG.CORS_PROXY + encodeURIComponent(url);
+    const proxyUrl = CONFIG.WORKER_URL + '/?url=' + encodeURIComponent(url);
     const res = await fetch(proxyUrl);
     
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -109,7 +109,7 @@ async function updatePriceMC() {
   }
 }
 
-// ===== UPDATE HOLDERS =====
+// ===== UPDATE HOLDERS (ESTIMATE FROM TRANSACTIONS) =====
 async function updateHolders() {
   const holdEl = document.querySelector('[data-holders]');
   if (!holdEl) return false;
@@ -117,25 +117,31 @@ async function updateHolders() {
   const holdVal = holdEl.querySelector('.v') || holdEl;
   
   try {
-    console.log('👥 Fetching holders...');
+    console.log('👥 Estimating holders from transactions...');
     
-    const url = `https://public-api.solscan.io/token/holders?tokenAddress=${CONFIG.CONTRACT}&offset=0&limit=1`;
+    const url = `https://api.dexscreener.com/latest/dex/tokens/${CONFIG.CONTRACT}`;
     const data = await fetchJSON(url);
     
-    if (data && data.total) {
-      holdVal.textContent = fmt(data.total, 0);
-      console.log('✅ Holders:', data.total);
+    if (data && data.pairs && data.pairs[0]) {
+      const pair = data.pairs[0];
+      const txns = pair.txns || {};
+      const h24 = txns.h24 || {};
+      
+      // Estimate holders dari transaction count
+      // Formula: (buys + sells) * 0.4 karena avg user trade 2-3x
+      const totalTxns = (h24.buys || 0) + (h24.sells || 0);
+      const estimatedHolders = Math.max(Math.floor(totalTxns * 0.4), 10);
+      
+      holdVal.textContent = '~' + fmt(estimatedHolders, 0);
+      console.log('✅ Estimated holders:', estimatedHolders, '(from', totalTxns, 'txns)');
       return true;
     }
     
   } catch (err) {
-    console.warn('⚠️ Holders failed:', err.message);
+    console.warn('⚠️ Holders estimation failed:', err.message);
   }
   
-  // Keep current or show placeholder
-  if (holdVal.textContent === '0') {
-    holdVal.textContent = '—';
-  }
+  holdVal.textContent = '~';
   return false;
 }
 
