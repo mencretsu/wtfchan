@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Year 2026 Countdown</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: 'Arial', sans-serif;
+      background: #000;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      overflow-x: hidden;
+      position: relative;
+      padding: 10px;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: url('https://cdn5.telesco.pe/file/YKE3bOv_iuKCOPN8xjuGdUtuv3JXK3X6AbEN6IxyQLmpFmRSRC6uvSGj944O_nmeiTxz5Ec9jrs_Vl37tDSGwKXm9rJFU3Sm0Ju5b8EzujsuAXchq4gViWLnm5pEggEOoJt9UyKxT9JCUiBeWdAbC45ESRr7Y3UXtsssMvuVzbVEo9hNuWuyx9a6bwmA8vio3rY1dRCPAfdLhOgILSBJ6mpYtgzNxI9r62brsYC2OhWkJCc7a23rfu8x5koz6MAWxsn5qrdvpeAAn7bew3Z59NeVWwpJOCytByRliZIQKmH4OMsntJl1gC5SUYagfroBnczk3pu4EJXMshjw_0brow.jpg');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      opacity: 0.4;
+      z-index: 0;
+    }
+    body::after {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.4) 100%);
+      z-index: 0;
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+      20%, 40%, 60%, 80% { transform: translateX(5px); }
+    }
+    @keyframes glow {
+      0%, 100% { text-shadow: 0 0 10px rgba(255,255,255,0.5); }
+      50% { text-shadow: 0 0 30px rgba(255,255,255,0.8), 0 0 50px rgba(255,255,255,0.5); }
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-20px); }
+    }
+    .container {
+      text-align: center;
+      z-index: 1;
+      padding: 20px;
+      max-width: 100%;
+      position: relative;
+    }
+    #welcome {
+      font-size: clamp(1.8rem, 8vw, 3.5rem);
+      font-weight: 700;
+      margin-bottom: 2rem;
+      text-shadow: 0 0 20px rgba(106, 255, 0, 0.8), 
+                   2px 2px 4px rgba(0,0,0,0.8);
+      display: inline-block;
+      color: #6aff00;
+    }
+    #countdown {
+      display: flex;
+      gap: clamp(0.5rem, 3vw, 2rem);
+      justify-content: center;
+      margin: 3rem 0;
+      flex-wrap: wrap;
+    }
+    .time-box {
+      background: rgba(106, 255, 0, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 15px;
+      padding: clamp(1rem, 4vw, 2rem) clamp(0.8rem, 3vw, 1.5rem);
+      min-width: clamp(70px, 20vw, 120px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5),
+                  0 0 20px rgba(106, 255, 0, 0.3),
+                  inset 0 0 20px rgba(106, 255, 0, 0.1);
+      border: 2px solid rgba(106, 255, 0, 0.3);
+      transition: all 0.3s ease;
+      animation: float 3s infinite ease-in-out;
+    }
+    .time-box:nth-child(1) { animation-delay: 0s; }
+    .time-box:nth-child(2) { animation-delay: 0.2s; }
+    .time-box:nth-child(3) { animation-delay: 0.4s; }
+    .time-box:nth-child(4) { animation-delay: 0.6s; }
+    .time-box:hover {
+      transform: translateY(-10px) scale(1.05);
+      box-shadow: 0 12px 40px rgba(0,0,0,0.6),
+                  0 0 40px rgba(106, 255, 0, 0.6);
+    }
+    .time-number {
+      font-size: clamp(2rem, 10vw, 4rem);
+      font-weight: 700;
+      display: block;
+      animation: glow 2s infinite;
+      color: #6aff00;
+    }
+    .time-label {
+      font-size: clamp(0.7rem, 2.5vw, 0.9rem);
+      text-transform: uppercase;
+      opacity: 0.9;
+      margin-top: 0.5rem;
+      letter-spacing: 2px;
+      color: #6aff00;
+    }
+    .buttons {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      margin-top: 2rem;
+      flex-wrap: wrap;
+    }
+    .btn {
+      padding: 12px 30px;
+      border: 2px solid #6aff00;
+      background: rgba(106, 255, 0, 0.1);
+      color: #6aff00;
+      text-decoration: none;
+      border-radius: 50px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      font-size: clamp(0.8rem, 3vw, 1rem);
+      box-shadow: 0 0 10px rgba(106, 255, 0, 0.3);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn:hover, .btn:active {
+      background: #6aff00;
+      color: #000;
+      transform: scale(1.1);
+      box-shadow: 0 0 30px rgba(106, 255, 0, 0.8);
+    }
+    @media (max-width: 768px) {
+      .container {
+        padding: 10px;
+      }
+      #countdown {
+        gap: 0.5rem;
+        margin: 2rem 0;
+      }
+      .time-box {
+        min-width: 70px;
+      }
+      .buttons {
+        gap: 0.5rem;
+      }
+      .btn {
+        padding: 10px 20px;
+      }
+    }
+    @media (max-width: 400px) {
+      #welcome {
+        margin-bottom: 1.5rem;
+      }
+      .time-box {
+        min-width: 60px;
+        padding: 0.8rem 0.5rem;
+      }
+      .time-label {
+        font-size: 0.65rem;
+        letter-spacing: 1px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 id="welcome">Welcome to 2026 Brooooooo</h1>
+    <div id="countdown">
+      <div class="time-box">
+        <span class="time-number" id="days">00</span>
+        <span class="time-label">Days</span>
+      </div>
+      <div class="time-box">
+        <span class="time-number" id="hours">00</span>
+        <span class="time-label">Hours</span>
+      </div>
+      <div class="time-box">
+        <span class="time-number" id="minutes">00</span>
+        <span class="time-label">Minutes</span>
+      </div>
+      <div class="time-box">
+        <span class="time-number" id="seconds">00</span>
+        <span class="time-label">Seconds</span>
+      </div>
+    </div>
+    <div class="buttons">
+      <a href="https://dexscreener.com/solana/EmgrrkntimBwGMebh8SCyqpUVrMYrcvn4aJzsBZ22WTF" target="_blank" class="btn" id="buyBtn">Buy</a>
+      <a href="https://twitter.com/welcometo2026" target="_blank" class="btn" id="xBtn">Follow X</a>
+      <a href="https://t.me/welcometo2026bro" target="_blank" class="btn" id="ttBtn">Telegram</a>
+    </div>
+  </div>
+
+  <script>
+    const target = new Date('2026-01-01T00:00:00');
+    const D = document.getElementById('days');
+    const H = document.getElementById('hours');
+    const M = document.getElementById('minutes');
+    const S = document.getElementById('seconds');
+
+    function calcAndRender(){
+      const now = new Date();
+      let diffMs = target - now;
+      if (diffMs < 0) diffMs = 0;
+      const days = Math.floor(diffMs / (24*60*60*1000));
+      const hours = Math.floor((diffMs % (24*60*60*1000)) / (60*60*1000));
+      const minutes = Math.floor((diffMs % (60*60*1000)) / (60*1000));
+      const seconds = Math.floor((diffMs % (60*1000)) / 1000);
+      D.textContent = String(days).padStart(2,'0');
+      H.textContent = String(hours).padStart(2,'0');
+      M.textContent = String(minutes).padStart(2,'0');
+      S.textContent = String(seconds).padStart(2,'0');
+      if (diffMs <= 0) {
+        document.getElementById('countdown').innerHTML = '<div style="text-align:center;padding:18px;font-weight:700;color:#6aff00;font-size:clamp(1.5rem,5vw,2rem)">Happy 2026! 🎉</div>';
+        cancelAnimationFrame(raf);
+      }
+    }
+    let last = 0; let raf;
+    function loop(ts){
+      if (ts - last > 250) { calcAndRender(); last = ts; }
+      raf = requestAnimationFrame(loop);
+    }
+    calcAndRender();
+    raf = requestAnimationFrame(loop);
+
+    /* RANDOM ABSURD EFFECTS TO WELCOME TEXT */
+    const welcome = document.getElementById('welcome');
+    const originalText = welcome.textContent;
+    let glitchInterval, colorInterval;
+
+    const effects = {
+      // Efek glitch text
+      glitch: () => {
+        const chars = '!<>-_\\/[]{}—=+*^?#________';
+        let iterations = 0;
+        clearInterval(glitchInterval);
+        glitchInterval = setInterval(() => {
+          welcome.textContent = originalText
+            .split('')
+            .map((char, index) => {
+              if (index < iterations) return originalText[index];
+              return chars[Math.floor(Math.random() * chars.length)];
+            })
+            .join('');
+          
+          if (iterations >= originalText.length) {
+            clearInterval(glitchInterval);
+            welcome.textContent = originalText;
+          }
+          iterations += 1/3;
+        }, 30);
+      },
+      
+      // Efek wave
+      wave: () => {
+        let offset = 0;
+        const waveTimer = setInterval(() => {
+          welcome.style.transform = `translateY(${Math.sin(offset) * 8}px) rotate(${Math.sin(offset * 0.5) * 2}deg)`;
+          offset += 0.15;
+          if (offset > Math.PI * 2) {
+            clearInterval(waveTimer);
+            welcome.style.transform = '';
+          }
+        }, 30);
+      },
+      
+      // Efek explode scale
+      explode: () => {
+        welcome.style.transition = 'transform 0.15s ease-out';
+        welcome.style.transform = 'scale(1.15)';
+        setTimeout(() => {
+          welcome.style.transform = 'scale(1)';
+          setTimeout(() => welcome.style.transition = '', 200);
+        }, 150);
+      },
+      
+      // Efek rainbow subtle dengan warna pepe-themed
+      rainbow: () => {
+        const colors = ['#6aff00', '#00ff88', '#00ffff', '#88ff00', '#ccff00', '#aaff00'];
+        let i = 0;
+        clearInterval(colorInterval);
+        colorInterval = setInterval(() => {
+          welcome.style.color = colors[i % colors.length];
+          i++;
+          if (i > 8) {
+            clearInterval(colorInterval);
+            welcome.style.color = '#6aff00';
+          }
+        }, 100);
+      },
+      
+      // Efek shake
+      shake: () => {
+        welcome.style.animation = 'shake 0.5s';
+        setTimeout(() => welcome.style.animation = '', 500);
+      },
+      
+      // Efek blur in out
+      blur: () => {
+        welcome.style.transition = 'filter 0.3s';
+        welcome.style.filter = 'blur(4px)';
+        setTimeout(() => {
+          welcome.style.filter = 'blur(0px)';
+          setTimeout(() => welcome.style.transition = '', 300);
+        }, 300);
+      },
+      
+      // Efek letter spacing crazy
+      spacing: () => {
+        welcome.style.transition = 'letter-spacing 0.4s ease';
+        welcome.style.letterSpacing = (Math.random() * 10 + 5) + 'px';
+        setTimeout(() => {
+          welcome.style.letterSpacing = '';
+          setTimeout(() => welcome.style.transition = '', 400);
+        }, 400);
+      },
+
+      // Efek rotate crazy
+      rotate: () => {
+        welcome.style.transition = 'transform 0.5s ease';
+        welcome.style.transform = `rotate(${Math.random() * 20 - 10}deg)`;
+        setTimeout(() => {
+          welcome.style.transform = 'rotate(0deg)';
+          setTimeout(() => welcome.style.transition = '', 500);
+        }, 500);
+      },
+
+      // Efek skew
+      skew: () => {
+        welcome.style.transition = 'transform 0.4s ease';
+        welcome.style.transform = `skew(${Math.random() * 20 - 10}deg, ${Math.random() * 10 - 5}deg)`;
+        setTimeout(() => {
+          welcome.style.transform = 'skew(0deg, 0deg)';
+          setTimeout(() => welcome.style.transition = '', 400);
+        }, 400);
+      },
+
+      // Efek glow intensify
+      glowBurst: () => {
+        welcome.style.transition = 'text-shadow 0.3s ease';
+        welcome.style.textShadow = '0 0 40px rgba(106, 255, 0, 1), 0 0 80px rgba(106, 255, 0, 0.8), 0 0 120px rgba(106, 255, 0, 0.6)';
+        setTimeout(() => {
+          welcome.style.textShadow = '0 0 20px rgba(106, 255, 0, 0.8), 2px 2px 4px rgba(0,0,0,0.8)';
+          setTimeout(() => welcome.style.transition = '', 300);
+        }, 300);
+      }
+    };
+
+    // Random trigger efek setiap 2 detik
+    setInterval(() => {
+      const effectNames = Object.keys(effects);
+      const randomEffect = effectNames[Math.floor(Math.random() * effectNames.length)];
+      effects[randomEffect]();
+    }, 2000);
+
+    // Prevent zoom on double tap for iOS
+    let lastTouchEnd = 0;
+    document.addEventListener('touchend', function (event) {
+      const now = (new Date()).getTime();
+      if (now - lastTouchEnd <= 300) {
+        event.preventDefault();
+      }
+      lastTouchEnd = now;
+    }, false);
+
+    // Function buat set links
+    window.setLinks = (buy, x, tiktok)=>{
+      document.getElementById('buyBtn').href = buy || '#';
+      document.getElementById('xBtn').href = x || '#';
+      document.getElementById('ttBtn').href = tiktok || '#';
+    };
+  </script>
+</body>
+</html>
